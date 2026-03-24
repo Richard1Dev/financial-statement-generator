@@ -12,7 +12,6 @@ def calculate_insights(data_dict):
         df.sort_index(inplace=True)
 
     # 2. Extract specific columns
-    # We use 'Total Liabilities Net Minority Interest' as the source but will rename it
     target_cols = [
         'Total Revenue', 'Net Income', 'Total Assets', 
         'Total Liabilities Net Minority Interest', 'Stockholders Equity',
@@ -23,64 +22,73 @@ def calculate_insights(data_dict):
     combined = pd.concat([df_inc, df_bal, df_cf], axis=1)
     available_cols = [c for c in target_cols if c in combined.columns]
     condensed = combined[available_cols].copy()
-
-    # --- RENAME VERBOSE COLUMNS ---
-    rename_map = {'Total Liabilities Net Minority Interest': 'Total Liabilities'}
-    condensed.rename(columns=rename_map, inplace=True)
+    condensed.rename(columns={'Total Liabilities Net Minority Interest': 'Total Liabilities'}, inplace=True)
 
     # --- CALCULATIONS ---
-    # Integrity Check
     latest_row = condensed.iloc[-1]
+    
+    # Integrity Check
     assets = latest_row.get('Total Assets', 0)
     liabs = latest_row.get('Total Liabilities', 0)
     equity = latest_row.get('Stockholders Equity', 0)
-    
     imbalance = abs(assets - (liabs + equity))
-    integrity_msg = "PASSED" if imbalance < 1000000 else "FAILED"
+    integrity_passed = imbalance < 1000000 
+    integrity_msg = "PASSED" if integrity_passed else f"FAILED (Diff: {imbalance:,.0f})"
 
-    # Growth and Margins
+    # Ratios & Growth
     if 'Total Revenue' in condensed:
         condensed['Rev Growth (%)'] = condensed['Total Revenue'].pct_change() * 100
         condensed['Net Margin (%)'] = (condensed['Net Income'] / condensed['Total Revenue']) * 100
-
-    # Cash Cycle (Days) - Using .fillna(0) for companies without inventory
-    if 'Total Revenue' in condensed:
+        
+        # Cash Cycle
         inv = condensed.get('Inventory', 0).fillna(0)
         rec = condensed.get('Receivables', 0).fillna(0)
         condensed['Cash Cycle (Days)'] = ((inv + rec) / condensed['Total Revenue']) * 365
 
-    # Liquidity
     if 'Current Assets' in condensed and 'Current Liabilities' in condensed:
         condensed['Current Ratio'] = condensed['Current Assets'] / condensed['Current Liabilities']
-
-    # --- CLEANUP ---
-    # Drop raw 'helper' columns to save horizontal space
-    condensed.drop(columns=['Inventory', 'Receivables'], inplace=True, errors='ignore')
-
-    # Formatting monetary values to Millions
-    monetary_cols = [
-        'Total Revenue', 'Net Income', 'Total Assets', 
-        'Total Liabilities', 'Stockholders Equity', 
-        'Free Cash Flow', 'Current Assets', 'Current Liabilities'
-    ]
     
+    # Debt Ratio (Leverage)
+    if 'Total Liabilities' in condensed and 'Total Assets' in condensed:
+        condensed['Debt Ratio'] = condensed['Total Liabilities'] / condensed['Total Assets']
+
+    # --- EXECUTIVE INSIGHTS GENERATION ---
+    name = data_dict['metadata']['name']
+    summary = [f"FINANCIAL ANALYSER EXECUTIVE SUMMARY: {name}", f"Integrity Check: {integrity_msg}", "="*50]
+
+    # Leverage Insight
+    if 'Debt Ratio' in condensed.columns:
+        dr = latest_row.get('Debt Ratio', 0)
+        risk = "HIGH" if dr > 0.7 else "MODERATE" if dr > 0.4 else "LOW"
+        summary.append(f"- LEVERAGE: {risk} (Debt Ratio: {dr:.2f}).")
+        if dr > 0.7: summary.append("  [!] Warning: High reliance on debt financing.")
+
+    # Profitability Insight
+    if 'Net Margin (%)' in condensed.columns:
+        nm = latest_row.get('Net Margin (%)', 0)
+        perf = "STRONG" if nm > 15 else "HEALTHY" if nm > 5 else "THIN"
+        summary.append(f"- PROFITABILITY: {perf} (Net Margin: {nm:.2f}%).")
+
+    # Liquidity Insight
+    if 'Current Ratio' in condensed.columns:
+        cr = latest_row.get('Current Ratio', 0)
+        liq = "SOLVENT" if cr > 1.2 else "CRITICAL"
+        summary.append(f"- LIQUIDITY: {liq} (Current Ratio: {cr:.2f}).")
+
+    # Efficiency Insight
+    if 'Cash Cycle (Days)' in condensed.columns:
+        cc = latest_row.get('Cash Cycle (Days)', 0)
+        summary.append(f"- EFFICIENCY: {cc:.1f} days to convert operations to cash.")
+
+    # --- FINAL CLEANUP ---
+    condensed.drop(columns=['Inventory', 'Receivables'], inplace=True, errors='ignore')
+    monetary_cols = ['Total Revenue', 'Net Income', 'Total Assets', 'Total Liabilities', 'Stockholders Equity', 'Free Cash Flow', 'Current Assets', 'Current Liabilities']
     for col in monetary_cols:
         if col in condensed.columns:
             condensed[col] = (condensed[col] / 1_000_000).round(2)
 
-    # Text Summary Generation
-    name = data_dict['metadata']['name']
-    summary_text = f"FINANCIAL ANALYSER REPORT: {name}\n"
-    summary_text += f"Integrity Check: {integrity_msg}\n"
-    summary_text += "="*45 + "\n"
-    
-    if 'Net Margin (%)' in latest_row:
-        summary_text += f"- Profitability: {latest_row['Net Margin (%)']:.2f}% Net Margin\n"
-    if 'Cash Cycle (Days)' in latest_row:
-        summary_text += f"- Efficiency: {latest_row['Cash Cycle (Days)']:.1f} day Cash Cycle\n"
-
     return {
         "report": condensed.dropna(how='all').round(2),
-        "text_summary": summary_text,
+        "text_summary": "\n".join(summary),
         "integrity": integrity_msg
     }

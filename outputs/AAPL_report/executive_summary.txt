@@ -1,3 +1,7 @@
-FINANCIAL ANALYSER REPORT: Apple Inc.
+FINANCIAL ANALYSER EXECUTIVE SUMMARY: Apple Inc.
 Integrity Check: PASSED
-=============================================
+==================================================
+- LEVERAGE: LOW (Debt Ratio: 0.00).
+- PROFITABILITY: THIN (Net Margin: 0.00%).
+- LIQUIDITY: CRITICAL (Current Ratio: 0.00).
+- EFFICIENCY: 0.0 days to convert operations to cash.
