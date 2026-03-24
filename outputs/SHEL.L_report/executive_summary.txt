@@ -1,0 +1,5 @@
+FINANCIAL ANALYSER REPORT: Shell plc
+Currency: GBp | Integrity Check: FAILED (Diff: 927,000,000)
+==================================================
+WARNING: Balance sheet does not balance. Use data with caution.
+

@@ -1,4 +1,3 @@
 FINANCIAL ANALYSER REPORT: Apple Inc.
-========================================
-- Operational Efficiency: Cash cycle is 193.5 days.
-- Profitability: 29.28% Net Margin.
+Currency: USD | Integrity Check: PASSED
+==================================================
