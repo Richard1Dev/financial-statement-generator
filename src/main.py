@@ -2,6 +2,7 @@
 from extract import get_data
 from transform import calculate_insights
 from load import save_to_csv
+from visualiser import generate_visualisations
 import pandas as pd
 import os
 
@@ -14,6 +15,7 @@ def run_pipeline(ticker, quarterly):
 
         clean_data = calculate_insights(raw_data)
         path = save_to_csv(ticker, clean_data)
+        generate_visualisations(ticker, clean_data['report'], path)
         print(f"  [+] Success: {ticker} report saved to {path}")
         
         # Get the most recent row for the comparison table

@@ -1,7 +1,0 @@
-FINANCIAL ANALYSER EXECUTIVE SUMMARY: Tesla, Inc.
-Integrity Check: FAILED (Diff: 728,000,000)
-==================================================
-- LEVERAGE: LOW (Debt Ratio: 0.00).
-- PROFITABILITY: THIN (Net Margin: 0.00%).
-- LIQUIDITY: CRITICAL (Current Ratio: 0.00).
-- EFFICIENCY: 0.0 days to convert operations to cash.
