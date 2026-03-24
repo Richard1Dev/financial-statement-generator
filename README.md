@@ -65,4 +65,3 @@ python src/main.py
 
 ## Disclaimer
 This tool is for educational and informational purposes only. It is not financial advice. All data is sourced via the `yfinance` library.
-```
