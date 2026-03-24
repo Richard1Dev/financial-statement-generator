@@ -1,3 +1,3 @@
 FINANCIAL ANALYSER REPORT: Apple Inc.
-Currency: USD | Integrity Check: PASSED
-==================================================
+Integrity Check: PASSED
+=============================================
