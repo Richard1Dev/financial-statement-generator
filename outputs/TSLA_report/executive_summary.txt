@@ -1,0 +1,3 @@
+FINANCIAL ANALYSER REPORT: Tesla, Inc.
+Integrity Check: FAILED
+=============================================
