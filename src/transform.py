@@ -1,45 +1,76 @@
+# src/transform.py
 import pandas as pd
 
 def calculate_insights(data_dict):
-    # 1. Transpose
+    # 1. Transpose and Immediately name the Index
     df_inc = data_dict['income'].T
-    df_bal = data_dict['balance'].T
-    df_cfl = data_dict['cash'].T
-    
     df_inc.index.name = 'Date'
+    
+    df_bal = data_dict['balance'].T
     df_bal.index.name = 'Date'
-    df_cfl.index.name = 'Date'
+    
+    df_cf = data_dict['cash'].T
+    df_cf.index.name = 'Date'
 
-    # 2. Accountant's 'Vital Signs' (The only columns we actually want)
-    # We use .get() or list intersection to avoid errors if a row is missing
+    # Sort by date so YoY and trends move forward in time
+    df_inc = df_inc.sort_index()
+    df_bal = df_bal.sort_index()
+    df_cf = df_cf.sort_index()
+
+    # 2. Expanded Accountant's 'Vital Signs' 
+    # Adding Gross Profit and Total Debt gives a better picture of health
     target_cols = [
-        'Total Revenue', 'Gross Profit', 'Operating Income', 
-        'Net Income', 'Total Assets', 'Total Liabilities', 
-        'Free Cash Flow', 'Total Debt'
+        'Total Revenue', 'Gross Profit', 'Net Income', 
+        'Total Assets', 'Total Liabilities', 'Total Debt',
+        'Current Assets', 'Current Liabilities', 'Free Cash Flow'
     ]
     
-    # Combine all statements into one big table to filter easily
-    combined = pd.concat([df_inc, df_bal, df_cfl], axis=1)
-    
-    # Filter to only the columns that exist in the data
+    combined = pd.concat([df_inc, df_bal, df_cf], axis=1)
     available_cols = [c for c in target_cols if c in combined.columns]
-    condensed_df = combined[available_cols].copy()
+    condensed = combined[available_cols].copy()
 
-    # 3. Calculate Key Ratios (The 'Insights')
-    insights = pd.DataFrame(index=condensed_df.index)
+    # 3. Calculations (YoY and Ratios)
+    if 'Total Revenue' in condensed:
+        condensed['Revenue Growth (%)'] = condensed['Total Revenue'].pct_change() * 100
     
-    if 'Net Income' in condensed_df and 'Total Revenue' in condensed_df:
-        insights['Net Profit Margin'] = condensed_df['Net Income'] / condensed_df['Total Revenue']
-    
-    if 'Total Liabilities' in condensed_df and 'Total Assets' in condensed_df:
-        insights['Debt Ratio'] = condensed_df['Total Liabilities'] / condensed_df['Total Assets']
+    if 'Net Income' in condensed and 'Total Revenue' in condensed:
+        condensed['Net Margin (%)'] = (condensed['Net Income'] / condensed['Total Revenue']) * 100
 
-    # 4. Final Polish: Denominate financial values in Millions
-    # Only apply to the raw dollar values, not the ratios
-    monetary_cols = condensed_df.columns
-    condensed_df[monetary_cols] = condensed_df[monetary_cols] / 1_000_000
+    if 'Current Assets' in condensed and 'Current Liabilities' in condensed:
+        condensed['Current Ratio'] = condensed['Current Assets'] / condensed['Current Liabilities']
+
+    # 4. Generate Executive Summary Text
+    latest = condensed.iloc[-1]
+    name = data_dict['metadata']['name']
+    curr = data_dict['metadata']['currency']
+    
+    summary_text = f"FINANCIAL REPORT: {name}\n"
+    summary_text += f"Currency: {curr} | Denominated in Millions (where applicable)\n"
+    summary_text += "="*40 + "\n"
+    
+    # Simple logic-based insights for the accountant
+    if 'Net Margin (%)' in latest:
+        margin = latest['Net Margin (%)']
+        summary_text += f"- Profitability: Net Margin is {margin:.2f}%\n"
+        
+    if 'Current Ratio' in latest:
+        cr = latest['Current Ratio']
+        desc = "Strong" if cr > 1.5 else "Adequate" if cr >= 1.0 else "Weak"
+        summary_text += f"- Liquidity: {desc} (Current Ratio: {cr:.2f})\n"
+
+    # 5. Denominate specific monetary columns in Millions
+    # We DON'T divide the percentages or the ratios
+    monetary_cols = [
+        'Total Revenue', 'Gross Profit', 'Net Income', 
+        'Total Assets', 'Total Liabilities', 'Total Debt', 
+        'Current Assets', 'Current Liabilities', 'Free Cash Flow'
+    ]
+    
+    for col in monetary_cols:
+        if col in condensed.columns:
+            condensed[col] = (condensed[col] / 1_000_000).round(2)
 
     return {
-        "summary_statement_millions": condensed_df.round(2),
-        "key_ratios": insights.round(4)
+        "report": condensed.dropna(how='all'),
+        "text_summary": summary_text
     }

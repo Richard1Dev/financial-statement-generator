@@ -1,14 +1,23 @@
+# src/load.py
 import os
+from datetime import datetime
 
 def save_to_csv(ticker, transformed_data):
-    # Use absolute pathing to ensure it finds /outputs/
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     output_dir = os.path.join(base_dir, "outputs", f"{ticker}_report")
-    
     os.makedirs(output_dir, exist_ok=True)
     
-    for name, df in transformed_data.items():
-        # Saving with index=True because the Date is our Index
-        df.to_csv(os.path.join(output_dir, f"{name}.csv"), index=True)
-        
+    # Save the main CSV
+    transformed_data['report'].to_csv(os.path.join(output_dir, "main_report.csv"))
+
+    # 3a. Save Executive Summary
+    with open(os.path.join(output_dir, "executive_summary.txt"), "w") as f:
+        f.write(transformed_data['text_summary'])
+
+    # 3c. Audit Log
+    with open(os.path.join(output_dir, "audit_log.txt"), "w") as f:
+        f.write(f"Data fetched at: {datetime.now()}\n")
+        f.write(f"Source: Yahoo Finance via yfinance\n")
+        f.write(f"Ticker: {ticker}\n")
+
     return output_dir

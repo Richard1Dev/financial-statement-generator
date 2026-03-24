@@ -1,0 +1,3 @@
+Data fetched at: 2026-03-24 12:01:02.675479
+Source: Yahoo Finance via yfinance
+Ticker: AAPL
