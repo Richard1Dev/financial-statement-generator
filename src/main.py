@@ -28,7 +28,7 @@ def run_pipeline(ticker, quarterly):
         return None
 
 if __name__ == "__main__":
-    print("=== British Financial Statement Analyser (Batch Mode) ===")
+    print("=== Financial Statement Analyser (Batch Mode) ===")
     
     user_input = input("Enter Ticker(s) separated by commas (e.g. AAPL, TSLA, BP.L): ")
     tickers = [t.strip().upper() for t in user_input.split(',')]

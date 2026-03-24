@@ -40,4 +40,26 @@ def generate_visualisations(ticker, df, output_dir):
         plt.savefig(os.path.join(plot_dir, "capital_structure.png"))
         plt.close()
 
+    # --- 3. NEW: Margin Heatmap ---
+    margin_cols = [c for c in ['Gross Margin (%)', 'Net Margin (%)'] if c in df.columns]
+    if margin_cols:
+        data = df[margin_cols].T # Transpose to get years on X-axis
+        
+        plt.figure(figsize=(10, 4))
+        plt.imshow(data, cmap='RdYlGn', aspect='auto')
+        
+        # Add labels
+        plt.colorbar(label='Percentage (%)')
+        plt.xticks(range(len(df.index)), [d.strftime('%Y') for d in df.index])
+        plt.yticks(range(len(margin_cols)), margin_cols)
+        plt.title(f"{ticker}: Margin Expansion/Contraction")
+        
+        # Annotate values on the "heatmap"
+        for i in range(len(margin_cols)):
+            for j in range(len(df.index)):
+                plt.text(j, i, f"{data.iloc[i, j]:.1f}%", ha='center', va='center', color='black')
+
+        plt.savefig(os.path.join(plot_dir, "margin_heatmap.png"))
+        plt.close()
+
     return plot_dir
